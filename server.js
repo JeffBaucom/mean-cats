@@ -2,6 +2,7 @@ var mongojs = require('mongojs');
 var express = require('express');
 var bodyParser = require('body-parser');
 var assert = require('assert');
+var path = require('path');
 
 var app = express();
 
@@ -16,26 +17,15 @@ app.use(function(req, res, next) {
     next();
 });
 
+app.use(morgan('dev'));
+
 var dbUrl = 'mongodb://localhost:27017/mean-cats';
 var db = mongojs(dbUrl, ['cats']);
 
-app.get('/api/cats', function(req, res) {
-	db.collection('cats').find(function(err, docs) {
-		res.send(docs);
-	});
-});
-
-app.post('/api/cats', function(req, res) {
-	db.collection('cats').insert(req.body, function(err, docs) {
-		assert.equal(null, err);
-		res.send('successful insert');
-	});
-
-});
+app.use(express.static(__dirname + '/public'));
 
 app.get('/*', function(req, res) {
-	res.send('successfully connected to mean-cat');
-
+	res.sendFile(path.join(__dirname + '/public/views/index.html'));
 });
 
 app.listen(3000, function() {
