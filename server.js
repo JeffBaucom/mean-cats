@@ -18,6 +18,9 @@ app.use(function(req, res, next) {
 });
 
 app.use(morgan('dev'));
+app.use(require('cookie-parser')());
+app.use(require('express-session')({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
+
 
 var dbUrl = 'mongodb://localhost:27017/mean-cats';
 var collections = ['cats', 'users', 'corrals'];
@@ -28,6 +31,9 @@ db.on('connect', function () {
 });
 
 app.use(express.static(__dirname + '/public'));
+
+var userRoutes = require('./api/routes/users')(app, express, db);
+app.use('/api/users', userRoutes);
 
 app.get('/*', function(req, res) {
 	res.sendFile(path.join(__dirname + '/public/views/index.html'));
