@@ -20,7 +20,12 @@ app.use(function(req, res, next) {
 app.use(morgan('dev'));
 
 var dbUrl = 'mongodb://localhost:27017/mean-cats';
-var db = mongojs(dbUrl, ['cats']);
+var collections = ['cats', 'users', 'corrals'];
+var db = mongojs.connect(dbUrl, collections);
+
+db.on('connect', function () {
+    console.log('database connected');
+});
 
 app.use(express.static(__dirname + '/public'));
 
