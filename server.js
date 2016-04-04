@@ -3,6 +3,8 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var assert = require('assert');
 var path = require('path');
+var passport = require('passport');
+var Strategy = require('passport-local').Strategy;
 
 var app = express();
 
