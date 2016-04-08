@@ -5,6 +5,8 @@ var assert = require('assert');
 var path = require('path');
 var crypto = require('crypto');
 var morgan = require('morgan');
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
 
 var app = express();
 
@@ -29,37 +31,47 @@ db.on('connect', function () {
     console.log('database connected');
 });
 
+passport.use(new LocalStrategy(
+	function(username, password, done) {
+		db.users.findOne({user: username}, function(err, doc) {
+			if (err) {return done(err);}
+			if (!doc) {
+				return done(null, false, {message: 'Incorrect username.'});
+			}
+			if (!validatePassword(doc, password)) {
+				return done(null, false, {message: 'Incorrect password.'});
+			}
+			console.log("success");
+			return done(null, doc);
+
+		});
+	}
+));
+
+validatePassword = function (userDoc, password) {
+	var out = false;
+	crypto.pbkdf2(password, userDoc.salt, 7000, 256, 
+	    function (err, hash) {
+	       
+	        if (userDoc.salt && 
+	        	(userDoc.hash === (new Buffer(hash).toString('hex')))) {
+	        	out = true;
+	        }
+	    });
+	console.log(out);
+	return out;
+};
+
 app.use(express.static(__dirname + '/public'));
 
 app.get('/login', function(req, res) {
 	res.sendFile(path.join(__dirname + '/public/views/login.html'));
 });
 
-app.post('/login', function(req, res) {
-  if (!req.body.user || !req.body.pass) {  
-    res.send('Username and password both required');
-    return;
-  }
-
-  crypto.randomBytes(128, function (err, salt) {
-    if (err) { throw err; }
-    db.users.findOne({user: req.body.user}, function(err, doc) {
-    	if (err) {res.send('there was an error logging in'); return;}
-    	if (!doc) {res.send('could not find user'); return;}
-	    crypto.pbkdf2(req.body.pass, doc.salt, 7000, 256, 
-	      function (err, hash) {
-	        if (err) { throw err; }
-	        	if (err) {res.send('there was an error logging in'); return;}
-
-	        	if (!doc) {res.send('could not find user'); return;}
-	        	if (doc.salt && (doc.hash === (new Buffer(hash).toString('hex')))) {
-
-	        		res.send('you are now logged in as ' + req.body.user);
-	        	}
-	           });
-	      });
-  });
-
+app.post('/login', 
+  passport.authenticate('local', { failureRedirect: '/login' }),
+  function(req, res) {
+    res.send('Super dope successful login yo!');
 });
 
 app.get('/register', function(req, res) {
